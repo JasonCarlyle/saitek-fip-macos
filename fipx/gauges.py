@@ -16,6 +16,8 @@ from __future__ import annotations
 
 import math
 
+import os
+
 from PIL import Image, ImageDraw, ImageFont
 
 W, H = 320, 240
@@ -37,25 +39,75 @@ SKY = (58, 130, 205)
 GROUND = (128, 78, 40)
 CYAN = (60, 200, 235)
 
+# A condensed bold sans, because a 320x240 dial has no room for anything else.
+# Liberation Sans Narrow is metric-compatible with Arial Narrow, so the Linux
+# gauges lay out the same as the ones these were drawn against on macOS; DejaVu
+# is wider but present on essentially every Linux box, so it is the safety net.
 FONT_PATHS = [
+    # macOS
     "/System/Library/Fonts/Supplemental/Arial Narrow Bold.ttf",
     "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
     "/System/Library/Fonts/Helvetica.ttc",
     "/Library/Fonts/Arial Bold.ttf",
+    # Linux -- Debian/Ubuntu, then Fedora, then Arch
+    "/usr/share/fonts/truetype/liberation/LiberationSansNarrow-Bold.ttf",
+    "/usr/share/fonts/liberation-sans-narrow/LiberationSansNarrow-Bold.ttf",
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+    "/usr/share/fonts/liberation-sans/LiberationSans-Bold.ttf",
+    "/usr/share/fonts/TTF/LiberationSans-Bold.ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+    "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf",
+    "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf",
+    "/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf",
 ]
 _fonts: dict = {}
+_font_file = None
+_font_warned = False
+
+
+def find_font():
+    """The first usable font, cached. Falls back to hunting through the system.
+
+    The explicit list covers macOS and the mainstream Linux font packages. If a
+    machine has none of them -- a minimal container, say -- walk the font
+    directories rather than dropping straight to PIL's built-in bitmap font,
+    which is 11 px tall and would make every gauge unreadable.
+    """
+    global _font_file
+    if _font_file is not None:
+        return _font_file
+    for path in FONT_PATHS:
+        if os.path.exists(path):
+            _font_file = path
+            return _font_file
+    import glob
+    for pattern in ("/usr/share/fonts/**/*Bold.ttf",
+                    "/usr/share/fonts/**/*bold.ttf",
+                    "/usr/share/fonts/**/*.ttf",
+                    "/usr/local/share/fonts/**/*.ttf",
+                    os.path.expanduser("~/.fonts/**/*.ttf")):
+        found = sorted(glob.glob(pattern, recursive=True))
+        if found:
+            _font_file = found[0]
+            return _font_file
+    return None
 
 
 def font(size: int):
+    global _font_warned
     size = max(6, int(size))
     if size not in _fonts:
-        for path in FONT_PATHS:
-            try:
-                _fonts[size] = ImageFont.truetype(path, size)
-                break
-            except OSError:
-                continue
-        else:
+        path = find_font()
+        try:
+            _fonts[size] = ImageFont.truetype(path, size) if path else None
+        except OSError:
+            _fonts[size] = None
+        if _fonts[size] is None:
+            if not _font_warned:
+                _font_warned = True
+                print("!! no TrueType font found — the gauges will be barely "
+                      "legible.\n   Install one:  apt install fonts-liberation "
+                      "(or fonts-dejavu-core)", flush=True)
             _fonts[size] = ImageFont.load_default()
     return _fonts[size]
 

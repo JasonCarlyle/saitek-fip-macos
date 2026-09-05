@@ -2,3 +2,4 @@
 __pycache__/
 *.py[cod]
 .DS_Store
+fip_hardware_report.txt

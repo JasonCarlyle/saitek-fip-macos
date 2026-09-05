@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """Probe the Saitek FIP over libusb on macOS: enumerate, init, push a test image."""
-import sys, time, struct
+import os, sys, time, struct
 import usb.core, usb.util
 from usb.backend import libusb1
 
 VID, PID = 0x06A3, 0xA2AE
-BACKEND = libusb1.get_backend(find_library=lambda x: "/opt/homebrew/lib/libusb-1.0.dylib")
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from fipx.device import get_backend
+from fipx import gauges as G
+BACKEND = get_backend()
 
 INIT      = bytes.fromhex("00000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000")
 INIT_ACK  = bytes.fromhex("00000000000000000000000001000000000000000000000a0000000000000000000000000000000200000000")
@@ -59,8 +62,8 @@ from PIL import Image, ImageDraw, ImageFont
 img = Image.new("RGB", (320, 240), (0, 128, 0))
 d = ImageDraw.Draw(img)
 try:
-    font = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial Bold.ttf", 30)
-    small = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial Bold.ttf", 20)
+    font = ImageFont.truetype(G.find_font(), 30)
+    small = ImageFont.truetype(G.find_font(), 20)
 except Exception:
     font = small = ImageFont.load_default()
 d.rectangle([0, 0, 319, 59], fill=(255, 0, 0))

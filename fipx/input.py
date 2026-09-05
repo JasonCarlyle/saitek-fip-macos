@@ -27,14 +27,26 @@ VID, PID = 0x06A3, 0xA2AE
 
 # bit index in the 12-bit report -> what that control is called.
 # Confirmed against the hardware: the six soft keys are bits 0-5 in order, the
-# left knob is 6/7 and the right knob is 10/11. Bits 8 and 9 never fired on this
-# panel. Which direction of each knob is which is a guess by symmetry with the
-# left one -- "fipx.py calibrate" settles it.
+# left knob is 6/7 and the right knob is 10/11. Which direction of each knob is
+# which is a guess by symmetry with the left one -- "fipx.py calibrate" settles
+# it.
+#
+# All twelve confirmed against the hardware by "fipx.py calibrate", which
+# prompts on the panel's own screen for each control in turn and records the bit
+# that fires. Two things this settled, both of which had been wrong:
+#
+#   * Bits 8 and 9 are the UP and DOWN buttons between the knobs. They were
+#     believed dead -- an earlier session pressed every control it knew about
+#     and never saw them fire, and wrote that down as a property of the device
+#     rather than of the pressing.
+#   * BOTH knob directions were inverted here. The original values were a guess,
+#     and being a guess is why the left knob used to step backwards through the
+#     instruments and the right knob turn the altimeter the wrong way.
 DEFAULT_MAPPING = {
     0: "s1", 1: "s2", 2: "s3", 3: "s4", 4: "s5", 5: "s6",
-    6: "left_cw", 7: "left_ccw",
-    10: "right_cw", 11: "right_ccw",
-    8: "aux1", 9: "aux2",
+    6: "left_ccw", 7: "left_cw",
+    8: "up", 9: "down",
+    10: "right_ccw", 11: "right_cw",
 }
 
 CONFIG_DIR = os.path.expanduser("~/.config/fipx")
@@ -42,13 +54,26 @@ MAPPING_FILE = os.path.join(CONFIG_DIR, "buttons.json")
 
 
 def load_mapping():
-    """The calibrated mapping if there is one, otherwise the sane default."""
+    """The calibrated mapping laid over the defaults.
+
+    Merged rather than substituted: a calibration run that is interrupted, or
+    that skips a control, used to leave that control unmapped for ever. Now
+    anything not learned keeps the built-in guess.
+    """
+    mapping = dict(DEFAULT_MAPPING)
     try:
         with open(MAPPING_FILE) as fh:
             saved = json.load(fh)
-        return {int(k): v for k, v in saved.items()}
     except (OSError, ValueError):
-        return dict(DEFAULT_MAPPING)
+        return mapping
+    learned = {int(k): v for k, v in saved.items()}
+    # Drop defaults whose name has been claimed by a different bit, or the old
+    # name lingers on a bit the user has just told us means something else.
+    claimed = set(learned.values())
+    mapping = {bit: name for bit, name in mapping.items()
+               if name not in claimed or bit in learned}
+    mapping.update(learned)
+    return mapping
 
 
 def save_mapping(mapping):
@@ -58,8 +83,17 @@ def save_mapping(mapping):
     return MAPPING_FILE
 
 
-def find_hid(serial: str | None = None):
-    for info in hid.enumerate(VID, PID):
+def find_hid(serial: str | None = None, index: int | None = None):
+    """The keypad interface of one panel: by serial, or by position in bus order.
+
+    Serial is what pairs a keypad with the right screen when several panels are
+    attached; `index` is the same fallback device.py uses for panels that do
+    not report a usable one.
+    """
+    found = sorted(hid.enumerate(VID, PID), key=lambda i: i.get("path") or b"")
+    if index is not None:
+        return found[index] if index < len(found) else None
+    for info in found:
         if serial is None or info.get("serial_number") == serial:
             return info
     return None
@@ -72,8 +106,10 @@ class FipInput:
     render loop never misses a knob detent.
     """
 
-    def __init__(self, serial: str | None = None, mapping=None, verbose=False):
+    def __init__(self, serial: str | None = None, mapping=None, verbose=False,
+                 index: int | None = None):
         self.serial = serial
+        self.index = index
         self.mapping = mapping if mapping is not None else load_mapping()
         self.verbose = verbose
         self.events: queue.Queue = queue.Queue()
@@ -86,7 +122,7 @@ class FipInput:
         self.error = None
 
     def open(self):
-        info = find_hid(self.serial)
+        info = find_hid(self.serial, self.index)
         if info is None:
             raise RuntimeError("no FIP HID interface found")
         self._dev = hid.Device(path=info["path"])

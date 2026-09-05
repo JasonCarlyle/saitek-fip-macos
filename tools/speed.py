@@ -1,3 +1,4 @@
+import os, sys
 #!/usr/bin/env python3
 """Measure sustained FIP frame rate: chunked writes vs one big write."""
 import time, math
@@ -5,7 +6,9 @@ import usb.core, usb.util
 from usb.backend import libusb1
 from PIL import Image, ImageDraw
 
-BACKEND = libusb1.get_backend(find_library=lambda x: "/opt/homebrew/lib/libusb-1.0.dylib")
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from fipx.device import get_backend
+BACKEND = get_backend()
 INIT    = bytes.fromhex("00000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000")
 IMG_HDR = bytes.fromhex("0000000000000001000384000000000000000000000000060000000000000000000000000000000000000000")
 

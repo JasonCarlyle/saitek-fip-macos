@@ -1,0 +1,28 @@
+# Saitek / Logitech Pro Flight Instrument Panel (06a3:a2ae)
+#
+# Without this, fipx runs only as root. Two separate permissions are needed,
+# because the panel is two devices in one:
+#
+#   * the display is a vendor-class USB interface driven through libusb, which
+#     needs access to the usb_device node;
+#   * the keys and knobs are an ordinary HID interface, which the kernel binds
+#     to usbhid and exposes as /dev/hidrawN.
+#
+# TAG+="uaccess" is the modern way to do this: systemd-logind grants the
+# permission to whoever is physically logged in, so no group juggling and no
+# rule to revisit when you add a user. MODE="0660" GROUP="plugdev" is the
+# fallback for systems without logind -- uncomment it if uaccess does nothing.
+#
+# Install:
+#   sudo cp linux/99-saitek-fip.rules /etc/udev/rules.d/
+#   sudo udevadm control --reload-rules && sudo udevadm trigger
+# then unplug the panel and plug it back in.
+
+# The display: libusb needs the whole device.
+SUBSYSTEM=="usb", ATTR{idVendor}=="06a3", ATTR{idProduct}=="a2ae", TAG+="uaccess"
+#SUBSYSTEM=="usb", ATTR{idVendor}=="06a3", ATTR{idProduct}=="a2ae", MODE="0660", GROUP="plugdev"
+
+# The keys and knobs: hidraw is a child of the USB device, so the ids have to be
+# matched on the parent rather than on the hidraw node itself.
+KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="06a3", ATTRS{idProduct}=="a2ae", TAG+="uaccess"
+#KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="06a3", ATTRS{idProduct}=="a2ae", MODE="0660", GROUP="plugdev"

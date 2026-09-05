@@ -8,6 +8,8 @@ None of them are needed to *use* the driver.
 
 | script | what it does |
 |---|---|
+| `hwreport.py` | **run this with the panel plugged in.** Every question only real hardware can answer — serial numbers, the handshake reply, the LED command, deinit, whether the USB reset is still needed, throughput — in one pass, written to a report file to send on |
+| `hdrcheck.py` | holds the four captured 44-byte packets and asserts `device.py`'s header builder still reproduces them, with no non-zero word outside a named field. No hardware needed; run it after touching `header()` |
 | `probe.py` | the first contact: enumerate the FIP, print its descriptors, handshake, and push one labelled test image. Run this first on unfamiliar hardware. |
 | `hiddesc.py` | dump and decode the HID report descriptor from IOKit — how the twelve-button, two-byte report layout was found |
 | `hidprobe.py` | listen to the HID interface and print each distinct report, for reading off the button bit map |
@@ -25,3 +27,6 @@ Typical use:
 .venv/bin/python tools/fake_xplane.py &    # then, in another shell:
 .venv/bin/python fipx.py run --verbose
 ```
+
+All of these now resolve libusb and fonts through `fipx.device.get_backend()`
+and `fipx.gauges.find_font()`, so they run on Linux as well as macOS.

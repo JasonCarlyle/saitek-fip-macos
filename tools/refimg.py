@@ -1,8 +1,12 @@
+import os, sys
 #!/usr/bin/env python3
 import usb.core, usb.util, time
 from usb.backend import libusb1
 from PIL import Image, ImageDraw, ImageFont
-B = libusb1.get_backend(find_library=lambda x: "/opt/homebrew/lib/libusb-1.0.dylib")
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from fipx.device import get_backend
+from fipx import gauges as G
+B = get_backend()
 INIT    = bytes.fromhex("00000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000")
 IMG_HDR = bytes.fromhex("0000000000000001000384000000000000000000000000060000000000000000000000000000000000000000")
 dev = usb.core.find(idVendor=0x06A3, idProduct=0xA2AE, backend=B)
@@ -17,7 +21,7 @@ eo.write(INIT, 2000); ei.read(512, 2000)
 
 img = Image.new("RGB", (320, 240), (0, 120, 0))
 d = ImageDraw.Draw(img)
-F = lambda s: ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial Bold.ttf", s)
+F = lambda s: ImageFont.truetype(G.find_font(), s)
 d.rectangle([0, 0, 319, 55], fill=(255, 0, 0))
 d.text((10, 12), "1 TOP RED", fill=(255, 255, 255), font=F(32))
 d.rectangle([0, 185, 319, 239], fill=(0, 0, 255))
