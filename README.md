@@ -30,6 +30,12 @@ interface, which we read the supported way through hidapi rather than trying to
 wrestle it away from the kernel. And X-Plane has published a UDP dataref
 protocol for years, so the simulator side needs no plugin either.
 
+> An independent, unaffiliated project. Saitek and Logitech are trademarks of
+> their respective owners; this is not endorsed or supported by Logitech, and
+> contains no Logitech code, firmware, or redistributed files. See
+> [Licence](#licence). It draws instrument faces for a flight simulator — don't
+> use it to fly a real aeroplane.
+
 ## Requirements
 
 * A Mac (Apple Silicon or Intel). Developed on macOS 15; older versions
@@ -282,6 +288,12 @@ packets, USB high-speed.
 Every command is answered with a 44-byte status packet on the IN endpoint, and
 that reply **must be read** or the device eventually stops responding.
 
+The driver builds these headers from the table above rather than replaying
+anything captured — `device.py` contains no literal command bytes at all — and
+asserts at import that its builder reproduces the observed handshake and image
+headers exactly. A decoded capture is only a theory until something checks it,
+and this is that check.
+
 ```
 handshake  00000000000000000000000000000000000000000000000a0000...
    reply   00000000000000000000000001000000000000000000000a0000...0200000000
@@ -363,12 +375,21 @@ multi panels are plain HID and are already handled by
 
 MIT — see [LICENSE](LICENSE).
 
-Saitek and Logitech are trademarks of their respective owners. This project is
-not affiliated with, endorsed by, or supported by Logitech. It contains no
-Logitech code, no firmware, and no files extracted from any Logitech
-distribution: the protocol description here was obtained by observing a device
-the author owns, for the purpose of making it work with hardware and software
-the author also owns.
+Saitek and Logitech are trademarks of their respective owners, used here only
+to identify the hardware this driver works with. This project is not affiliated
+with, endorsed by, or supported by Logitech.
+
+It contains no Logitech code, no firmware, and no files extracted from any
+Logitech distribution. The device needs no firmware upload, so none is shipped
+or referenced. The driver itself embeds no captured data of any kind: it
+constructs its USB headers from the documented structure above, and the only
+literal command strings anywhere in the repository are two 44-byte constants —
+largely zeros, describing a wire format — in the `tools/` scripts used to
+establish that structure in the first place.
+
+The protocol description here was arrived at by observing a device the author
+owns, for the purpose of making it work with hardware and software the author
+also owns.
 
 It draws instrument faces for a flight simulator. Do not use it to fly a real
 aeroplane.
