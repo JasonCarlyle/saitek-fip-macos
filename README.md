@@ -108,9 +108,9 @@ back in brings it up again on a free instrument. A panel that wedges rather than
 disappears retries on its own with a backoff.
 
 Panels are told apart by **USB serial number**, which is what survives the USB
-reset on open. The panel here reports `SZ00009145`, and — the part that matters —
-**its keypad reports the same serial as its display**, so a screen really can be
-paired with the right set of buttons. That is the assumption the whole design
+reset on open. The panel here reports one, and — the part that matters — **its
+keypad reports the same serial as its display**, so a screen really can be paired
+with the right set of buttons. That is the assumption the whole design
 rests on, and it holds on the one panel available to test it. Whether serials are
 distinct *between* panels still needs somebody with two.
 
@@ -483,7 +483,7 @@ Developed and flown on:
 | Python | 3.14, with pyusb, Pillow and hid |
 | Libraries | libusb 1.0.30, hidapi 0.15.0 (Homebrew) |
 | Simulator | X-Plane 12.4.3 |
-| Panel | one FIP, `06a3:a2ae`, `bcdDevice` 0x0218, serial `SZ00009145` |
+| Panel | one FIP, `06a3:a2ae`, `bcdDevice` 0x0218 |
 | Linux | Debian 12, Python 3.11, x86-64 and arm64 — no panel attached |
 
 A note on Python versions, since it bit this project: `threading.Thread` has an
