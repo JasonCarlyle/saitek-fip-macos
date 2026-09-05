@@ -15,8 +15,6 @@ So the panel sits in a drawer.
 This drives it directly. No kernel extension, no DirectOutput service, no
 X-Plane plugin.
 
-![The six instruments](docs/gauges.png)
-
 ```
 X-Plane 12  --UDP 49000-->  fipx  --USB bulk-->  FIP screen
                              ^                   FIP keys and knobs
@@ -49,7 +47,7 @@ protocol for years, so the simulator side needs no plugin either.
 ## Install and run
 
 ```
-git clone https://github.com/YOU/saitek-fip-macos.git
+git clone https://github.com/JasonCarlyle/saitek-fip-macos.git
 cd saitek-fip-macos
 ./run.command
 ```
@@ -143,8 +141,8 @@ so the next person doesn't start from nothing.
 ## What already existed
 
 **[EasyNetDev/Saitek-FIP](https://github.com/EasyNetDev/Saitek-FIP)** is the
-reason this project was a weekend rather than a month. That repository contains
-no source code — a README and a photograph — but its author did the one step
+reason this project was a few hours rather than a month. That repository contains
+no source code but its author did the one step
 that is genuinely hard to repeat: they ran Logitech's Windows DirectOutput
 service under a USB capture, pulled the packets out with Wireshark and
 `tshark`, and wrote down what the driver actually sends.
@@ -246,26 +244,6 @@ them, so each one has a check behind it:
   `tools/stagediag.py`) produced the throughput and error-rate numbers quoted
   above
 * finally, flown against X-Plane 12.4.3 with a Cessna 172, holding 23 fps
-
-## Tooling, honestly
-
-This was built in a single session with **[Claude
-Code](https://claude.com/claude-code)** (Anthropic's CLI), working directly
-against the physical panel — enumerating USB descriptors, pushing test frames,
-benchmarking, and iterating on the gauge rendering. Every protocol claim in
-this document was confirmed against the hardware rather than taken on trust,
-which matters more than who typed it: the inherited capture and the model's
-guesses were both wrong about something (endpoint numbering, pixel order, knob
-bits, turn-coordinator geometry), and the hardware settled each one.
-
-The parts a human had to supply: deciding what the panel should display,
-answering what the screen actually looked like — no camera on the other end of
-a USB cable — and pressing every button so the bit map could be read off.
-
-The X-Plane side involved no reverse engineering at all. Laminar Research
-document the `RREF`/`DREF` UDP protocol, and the dataref list, string-dataref
-handling and gyro-source selection are carried over from the author's earlier
-`xplane-sixpack` browser panel, which had already solved them.
 
 ---
 
